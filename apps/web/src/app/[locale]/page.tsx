@@ -1,36 +1,12 @@
-import Header from '@/components/header';
-import Footer from '@/components/Footer';
-import { SocialLink, Skill, Project, Experience, Education } from '@/types';
+import { useTranslations } from 'next-intl';
 
-// Import mock data (in a real app, this would be from API)
-async function getSocialLinks(locale: string): Promise<SocialLink[]> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/mock-data/${locale}/socials.json`,
-    { cache: 'no-store' }
-  );
-  if (!res.ok) {
-    // Fallback to reading from file system in development
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'public/mock-data', locale, 'socials.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  }
-  return res.json();
-}
-
-export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-
-  const [socialLinks] = await Promise.resolve(getSocialLinks(locale));
+export default function HomePage() {
+  const t = useTranslations('HomePage');
 
   return (
-    <div>
-      <Header />
-      <main>
-        <p>Este es el contenido principal</p>
-      </main>
-      <Footer socialLinks={socialLinks} />
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+      <h1 className="text-3xl font-semibold">{t('title')}</h1>
+      <p className="text-muted-foreground max-w-xl">{t('description')}</p>
+    </main>
   );
 }

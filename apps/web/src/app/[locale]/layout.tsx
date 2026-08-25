@@ -1,19 +1,11 @@
 import type { Metadata } from 'next';
 import { Open_Sans, Fira_Code } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getTranslations } from 'next-intl/server';
+import { hasLocale, NextIntlClientProvider } from 'next-intl';
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
 import '../globals.css';
-import '@fortawesome/fontawesome-svg-core/styles.css';
-import { config } from '@fortawesome/fontawesome-svg-core';
-import '@/lib/fontawesome';
-import { Locales } from '@/i18n/request';
-import CursorGradient from '@/components/CursorGradient';
-
-// Prevent Font Awesome from auto-adding CSS
-config.autoAddCss = false;
 
 const openSans = Open_Sans({
   variable: '--font-open-sans',
@@ -48,12 +40,12 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
 
-  // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as Locales)) {
+  if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
-  // Providing all messages to the client side
+  setRequestLocale(locale);
+
   const messages = await getMessages();
 
   return (
@@ -64,8 +56,7 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
         {/* Favicon */}
-        <link rel="icon" href="./favicon.ico" />
-        <link rel="apple-touch-icon" href="./favicon.png" />
+        <link rel="icon" href="/favicon.ico" />
       </head>
       <body
         className={`${openSans.variable} ${firaCode.variable} antialiased`}

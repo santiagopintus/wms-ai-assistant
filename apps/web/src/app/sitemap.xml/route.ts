@@ -1,17 +1,20 @@
+import { routing } from '@/i18n/routing';
+
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
+  const urls = routing.locales
+    .map(
+      (locale) => `  <url>
+    <loc>${baseUrl}/${locale}</loc>
+  </url>`
+    )
+    .join('\n');
+
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${baseUrl}/sitemap-en.xml</loc>
-    <lastmod>2025-12-15</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${baseUrl}/sitemap-es.xml</loc>
-    <lastmod>2025-12-15</lastmod>
-  </sitemap>
-</sitemapindex>`;
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>`;
 
   return new Response(sitemap, {
     headers: {
