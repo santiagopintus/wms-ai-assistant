@@ -4,8 +4,9 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { SendHorizonal, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import { MarkdownMessage } from '@/components/markdown-message';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,12 +18,19 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:400
 export function CopilotSidebar() {
   const t = useTranslations('Dashboard.copilot');
   const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { messages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({ api: `${BACKEND_URL}/api/chat` }),
   });
 
   const isBusy = status === 'submitted' || status === 'streaming';
+
+  useEffect(() => {
+    if (!isBusy) {
+      inputRef.current?.focus();
+    }
+  }, [isBusy]);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -50,14 +58,14 @@ export function CopilotSidebar() {
               <div
                 key={message.id}
                 className={cn(
-                  'max-w-[90%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap',
+                  'max-w-[90%] rounded-lg px-3 py-2',
                   message.role === 'user'
                     ? 'ml-auto bg-primary text-primary-foreground'
                     : 'bg-muted text-foreground'
                 )}
               >
                 {message.parts.map((part, i) =>
-                  part.type === 'text' ? <span key={i}>{part.text}</span> : null
+                  part.type === 'text' ? <MarkdownMessage key={i} text={part.text} /> : null
                 )}
               </div>
             ))}
@@ -71,6 +79,7 @@ export function CopilotSidebar() {
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2 p-4">
         <Input
+          ref={inputRef}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t('inputPlaceholder')}
