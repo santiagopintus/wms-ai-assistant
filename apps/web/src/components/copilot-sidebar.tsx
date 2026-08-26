@@ -49,7 +49,7 @@ export function CopilotSidebar() {
 
       <Separator />
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="min-h-0 flex-1 p-4">
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('emptyState')}</p>
         ) : (
