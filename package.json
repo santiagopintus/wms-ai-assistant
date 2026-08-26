@@ -1,7 +1,8 @@
 {
-  "name": "copiloto-comercial",
+  "name": "wms-ai-assistant",
   "version": "0.1.0",
   "private": true,
+  "author": "Santiago Pintus",
   "workspaces": [
     "apps/*"
   ],
