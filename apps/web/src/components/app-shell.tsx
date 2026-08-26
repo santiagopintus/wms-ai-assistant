@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import { CopilotSidebar } from '@/components/copilot-sidebar';
+import { ResizableSidebar } from '@/components/resizable-sidebar';
 import { WarehouseTabs } from '@/components/warehouse-tabs';
 
 export function AppShell() {
@@ -13,9 +14,9 @@ export function AppShell() {
         <WarehouseTabs />
       </main>
 
-      <aside className="w-[380px] shrink-0 border-l">
+      <ResizableSidebar>
         <CopilotSidebar />
-      </aside>
+      </ResizableSidebar>
     </div>
   );
 }
