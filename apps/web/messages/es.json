@@ -6,5 +6,19 @@
   "HomePage": {
     "title": "Copiloto Comercial Inteligente",
     "description": "Canal conversacional bilingüe y copiloto comercial, próximamente."
+  },
+  "Dashboard": {
+    "title": "Datos del Almacén",
+    "tabs": {
+      "products": "Productos",
+      "inventory": "Inventario",
+      "orders": "Pedidos",
+      "orderItems": "Ítems de Pedido"
+    },
+    "copilot": {
+      "title": "Copiloto",
+      "emptyState": "Haz una pregunta sobre tu inventario para comenzar.",
+      "inputPlaceholder": "Pregúntale al copiloto..."
+    }
   }
 }

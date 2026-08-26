@@ -6,5 +6,19 @@
   "HomePage": {
     "title": "Smart Sales Copilot",
     "description": "Bilingual conversational channel and commercial copilot, coming soon."
+  },
+  "Dashboard": {
+    "title": "Warehouse Data",
+    "tabs": {
+      "products": "Products",
+      "inventory": "Inventory",
+      "orders": "Orders",
+      "orderItems": "Order Items"
+    },
+    "copilot": {
+      "title": "Copilot",
+      "emptyState": "Ask a question about your inventory to get started.",
+      "inputPlaceholder": "Ask the copilot..."
+    }
   }
 }
