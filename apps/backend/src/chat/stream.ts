@@ -18,12 +18,17 @@ export async function chatStreamHandler(req: Request, res: Response) {
   const { messages } = req.body as { messages: UIMessage[] };
 
   const result = streamText({
-    model: groq("groq/compound"),
+    model: groq("openai/gpt-oss-120b"),
     system: SYSTEM_PROMPT,
     messages: convertToModelMessages(messages),
     tools,
     stopWhen: stepCountIs(5),
   });
 
-  result.pipeUIMessageStreamToResponse(res);
+  result.pipeUIMessageStreamToResponse(res, {
+    onError: (error) => {
+      console.error('chatStreamHandler error:', error);
+      return 'An error occurred.';
+    },
+  });
 }
