@@ -1,8 +1,11 @@
 import "dotenv/config";
-import { supabase } from "../src/lib/supabase.js";
+import { Client } from "pg";
 
 // Deterministic-ish synthetic warehouse dataset: enough products/orders for
 // meaningful "top sellers" and low-stock queries without external data.
+//
+// Connects directly to Postgres (transaction pooler) rather than through
+// supabase-js/PostgREST, so seeding doesn't depend on the REST API being up.
 
 const CATEGORIES = [
   "Tools",
@@ -92,89 +95,111 @@ function randomDateWithinDays(days: number): Date {
   return new Date(past);
 }
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var: ${name}`);
+  return value;
+}
+
 async function main() {
-  const products = buildProducts();
-
-  console.log(`Seeding ${products.length} products...`);
-  const { data: insertedProducts, error: productsError } = await supabase
-    .from("products")
-    .upsert(
-      products.map(({ sku, name, category, price, reorderThreshold }) => ({
-        sku,
-        name,
-        category,
-        price,
-        reorder_threshold: reorderThreshold,
-      })),
-      { onConflict: "sku" },
-    )
-    .select("id, sku");
-
-  if (productsError) throw productsError;
-  if (!insertedProducts) throw new Error("No products returned after insert");
-
-  const skuToId = new Map(insertedProducts.map((p) => [p.sku, p.id as string]));
-
-  console.log("Seeding inventory...");
-  const { error: inventoryError } = await supabase.from("inventory").upsert(
-    products.map((p) => ({
-      product_id: skuToId.get(p.sku),
-      quantity_on_hand: p.quantityOnHand,
-      warehouse_location: `Aisle ${1 + Math.floor(Math.random() * 12)}`,
-    })),
-    { onConflict: "product_id" },
-  );
-  if (inventoryError) throw inventoryError;
-
-  const ORDER_COUNT = 300;
-  const DAYS_OF_HISTORY = 90;
-
-  // Skew sales toward a subset of products so "top sellers" is meaningful.
-  const bestSellers = new Set(
-    products
-      .map((p) => p.sku)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.ceil(products.length * 0.25)),
-  );
-
-  console.log(`Seeding ${ORDER_COUNT} orders...`);
-  const { data: insertedOrders, error: ordersError } = await supabase
-    .from("orders")
-    .insert(
-      Array.from({ length: ORDER_COUNT }, () => ({
-        ordered_at: randomDateWithinDays(DAYS_OF_HISTORY).toISOString(),
-      })),
-    )
-    .select("id");
-  if (ordersError) throw ordersError;
-  if (!insertedOrders) throw new Error("No orders returned after insert");
-
-  console.log("Seeding order items...");
-  const orderItems = insertedOrders.flatMap((order) => {
-    const itemCount = 1 + Math.floor(Math.random() * 4);
-    return Array.from({ length: itemCount }, () => {
-      const pickBestSeller = Math.random() < 0.6;
-      const pool = pickBestSeller
-        ? products.filter((p) => bestSellers.has(p.sku))
-        : products;
-      const product = pool[Math.floor(Math.random() * pool.length)];
-      return {
-        order_id: order.id,
-        product_id: skuToId.get(product.sku),
-        quantity: 1 + Math.floor(Math.random() * 5),
-        unit_price: product.price,
-      };
-    });
+  const client = new Client({
+    host: requireEnv("SUPABASE_DB_HOST"),
+    port: Number(process.env.SUPABASE_DB_PORT ?? 6543),
+    database: process.env.SUPABASE_DB_NAME ?? "postgres",
+    user: requireEnv("SUPABASE_DB_USER"),
+    password: requireEnv("SUPABASE_DB_PASS"),
+    ssl: { rejectUnauthorized: false },
   });
 
-  const { error: orderItemsError } = await supabase
-    .from("order_items")
-    .insert(orderItems);
-  if (orderItemsError) throw orderItemsError;
+  await client.connect();
 
-  console.log(
-    `Done. Seeded ${products.length} products, ${ORDER_COUNT} orders, ${orderItems.length} order items.`,
-  );
+  try {
+    const products = buildProducts();
+
+    console.log(`Seeding ${products.length} products...`);
+    const skuToId = new Map<string, string>();
+    for (const p of products) {
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO products (sku, name, category, price, reorder_threshold)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (sku) DO UPDATE SET
+           name = EXCLUDED.name,
+           category = EXCLUDED.category,
+           price = EXCLUDED.price,
+           reorder_threshold = EXCLUDED.reorder_threshold
+         RETURNING id`,
+        [p.sku, p.name, p.category, p.price, p.reorderThreshold],
+      );
+      skuToId.set(p.sku, rows[0].id);
+    }
+
+    console.log("Seeding inventory...");
+    for (const p of products) {
+      await client.query(
+        `INSERT INTO inventory (product_id, quantity_on_hand, warehouse_location)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (product_id) DO UPDATE SET
+           quantity_on_hand = EXCLUDED.quantity_on_hand,
+           warehouse_location = EXCLUDED.warehouse_location`,
+        [
+          skuToId.get(p.sku),
+          p.quantityOnHand,
+          `Aisle ${1 + Math.floor(Math.random() * 12)}`,
+        ],
+      );
+    }
+
+    const ORDER_COUNT = 300;
+    const DAYS_OF_HISTORY = 90;
+
+    // Skew sales toward a subset of products so "top sellers" is meaningful.
+    const bestSellers = new Set(
+      products
+        .map((p) => p.sku)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, Math.ceil(products.length * 0.25)),
+    );
+
+    console.log(`Seeding ${ORDER_COUNT} orders...`);
+    const orderIds: string[] = [];
+    for (let i = 0; i < ORDER_COUNT; i++) {
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO orders (ordered_at) VALUES ($1) RETURNING id`,
+        [randomDateWithinDays(DAYS_OF_HISTORY).toISOString()],
+      );
+      orderIds.push(rows[0].id);
+    }
+
+    console.log("Seeding order items...");
+    let orderItemCount = 0;
+    for (const orderId of orderIds) {
+      const itemCount = 1 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < itemCount; i++) {
+        const pickBestSeller = Math.random() < 0.6;
+        const pool = pickBestSeller
+          ? products.filter((p) => bestSellers.has(p.sku))
+          : products;
+        const product = pool[Math.floor(Math.random() * pool.length)];
+        await client.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            orderId,
+            skuToId.get(product.sku),
+            1 + Math.floor(Math.random() * 5),
+            product.price,
+          ],
+        );
+        orderItemCount += 1;
+      }
+    }
+
+    console.log(
+      `Done. Seeded ${products.length} products, ${ORDER_COUNT} orders, ${orderItemCount} order items.`,
+    );
+  } finally {
+    await client.end();
+  }
 }
 
 main().catch((err) => {
