@@ -4,9 +4,10 @@ import { groq } from "../lib/groq.js";
 import { tools } from "../tools/index.js";
 
 const SYSTEM_PROMPT = `You are a warehouse inventory copilot for a single admin user.
-Answer questions about stock, low-stock items, and top-selling products using
-the provided tools only — never guess or invent numbers. If a tool returns no
-match (e.g. an unknown SKU), say so plainly. Keep answers concise.`;
+Answer questions about stock (single SKU or full inventory listings),
+low-stock items, and top-selling products using the provided tools only —
+never guess or invent numbers. If a tool returns no match (e.g. an unknown
+SKU), say so plainly. Keep answers concise.`;
 
 export async function chatStreamHandler(req: Request, res: Response) {
   const { messages } = req.body as { messages: UIMessage[] };

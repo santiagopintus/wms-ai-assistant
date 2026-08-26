@@ -3,6 +3,7 @@ import { db } from "../lib/db.js";
 import { getStock } from "./getStock.js";
 import { getTopSellingProducts } from "./getTopSellingProducts.js";
 import { getLowStockItems } from "./getLowStockItems.js";
+import { getAllStock } from "./getAllStock.js";
 
 // Integration tests: these hit the real Supabase Postgres database (same
 // connection scripts/seed.ts uses) rather than mocking it, so a seeded
@@ -29,6 +30,8 @@ describe("getStock", () => {
     expect(typeof result?.quantityOnHand).toBe("number");
     expect(result?.quantityOnHand).toBeGreaterThanOrEqual(0);
     expect(typeof result?.reorderThreshold).toBe("number");
+    expect(typeof result?.price).toBe("number");
+    expect(result?.price).toBeGreaterThan(0);
   });
 
   it("returns null for a SKU that doesn't exist", async () => {
@@ -94,5 +97,48 @@ describe("getLowStockItems", () => {
     const generous = await getLowStockItems(100000);
     expect(generous.length).toBeGreaterThanOrEqual(result.length);
     expect(generous.length).toBeGreaterThan(0);
+  });
+});
+
+describe("getAllStock", () => {
+  it("returns every product with a correctly shaped stock line", async () => {
+    const { rows } = await db.query<{ count: string }>(
+      "SELECT COUNT(*)::text AS count FROM products",
+    );
+    const productCount = Number(rows[0].count);
+
+    const result = await getAllStock();
+
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(productCount);
+
+    for (const item of result) {
+      expect(typeof item.sku).toBe("string");
+      expect(typeof item.name).toBe("string");
+      expect(typeof item.category).toBe("string");
+      expect(typeof item.quantityOnHand).toBe("number");
+      expect(item.quantityOnHand).toBeGreaterThanOrEqual(0);
+      expect(typeof item.price).toBe("number");
+      expect(item.price).toBeGreaterThan(0);
+      expect(
+        item.warehouseLocation === null ||
+          typeof item.warehouseLocation === "string",
+      ).toBe(true);
+    }
+  });
+
+  it("defaults to sorting by quantity descending", async () => {
+    const result = await getAllStock();
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i - 1].quantityOnHand).toBeGreaterThanOrEqual(
+        result[i].quantityOnHand,
+      );
+    }
+  });
+
+  it("sorts alphabetically by name when requested", async () => {
+    const result = await getAllStock("name");
+    const names = result.map((item) => item.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
 });

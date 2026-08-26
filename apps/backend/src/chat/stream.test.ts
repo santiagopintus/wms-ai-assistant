@@ -78,4 +78,36 @@ describe("POST /api/chat (Groq integration)", () => {
     expect(res.text).toContain('"type":"finish"');
     expect(res.text).not.toContain('"type":"error"');
   });
+
+  it("calls the getAllStock tool for a full-inventory / 'what do we have the most of' question", async () => {
+    const res = await request(app)
+      .post("/api/chat")
+      .send(userMessage("What item do we have the most of in stock? Use the tool."))
+      .expect(200);
+
+    expect(res.text).toContain('"toolName":"getAllStock"');
+    expect(res.text).toContain('"type":"tool-output-available"');
+    expect(res.text).toContain('"type":"finish"');
+    expect(res.text).not.toContain('"type":"error"');
+  });
+
+  it("answers a price question by name using a tool result that includes price", async () => {
+    const { rows } = await db.query<{ name: string }>(
+      "SELECT name FROM products LIMIT 1",
+    );
+    const { name } = rows[0];
+
+    const res = await request(app)
+      .post("/api/chat")
+      .send(userMessage(`How much does the ${name} cost? Use a tool to check.`))
+      .expect(200);
+
+    // Could be answered via getStock (if the model already knows the SKU) or
+    // getAllStock (scanning by name) — either way price must be in the data.
+    expect(res.text).toMatch(/"toolName":"(getStock|getAllStock)"/);
+    expect(res.text).toContain('"price"');
+    expect(res.text).toContain('"type":"tool-output-available"');
+    expect(res.text).toContain('"type":"finish"');
+    expect(res.text).not.toContain('"type":"error"');
+  });
 });

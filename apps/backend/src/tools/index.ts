@@ -3,11 +3,12 @@ import { z } from "zod";
 import { getStock } from "./getStock.js";
 import { getTopSellingProducts } from "./getTopSellingProducts.js";
 import { getLowStockItems } from "./getLowStockItems.js";
+import { getAllStock } from "./getAllStock.js";
 
 export const tools = {
   getStock: tool({
     description:
-      "Look up current stock (quantity on hand, location) for a single product by SKU.",
+      "Look up current stock (quantity on hand, location, price) for a single product by SKU.",
     inputSchema: z.object({
       sku: z.string().describe("The product SKU, e.g. SKU-1001"),
     }),
@@ -52,5 +53,21 @@ export const tools = {
     }),
     execute: async ({ thresholdOverride }) =>
       getLowStockItems(thresholdOverride),
+  }),
+
+  getAllStock: tool({
+    description:
+      "List every product with its current stock quantity, category, price, and warehouse location — the full inventory, not just low-stock ones. Use this for questions like 'what do we have the most of', 'show me all the stock', or price lookups by name.",
+    inputSchema: z.object({
+      sortBy: z
+        .enum(["quantity", "name"])
+        .nullable()
+        .optional()
+        .transform((value) => value ?? undefined)
+        .describe(
+          "How to sort the list: 'quantity' (highest stock first, default) or 'name' (alphabetical)",
+        ),
+    }),
+    execute: async ({ sortBy }) => getAllStock(sortBy),
   }),
 };
