@@ -41,20 +41,31 @@ export const productColumns: ColumnDef<Product>[] = [
   },
 ];
 
-export const inventoryColumns: ColumnDef<Inventory>[] = [
-  { accessorKey: 'product_id', header: 'Product ID' },
-  { accessorKey: 'quantity_on_hand', header: 'Quantity On Hand' },
-  {
-    accessorKey: 'warehouse_location',
-    header: 'Warehouse Location',
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-  },
-  {
-    accessorKey: 'updated_at',
-    header: 'Updated At',
-    cell: ({ getValue }) => formatDate(getValue<string>()),
-  },
-];
+export function createInventoryColumns(
+  productNameById: Record<string, string>,
+): ColumnDef<Inventory>[] {
+  return [
+    {
+      accessorKey: 'product_id',
+      header: 'Product',
+      cell: ({ getValue }) => {
+        const productId = getValue<string>();
+        return productNameById[productId] ?? productId;
+      },
+    },
+    { accessorKey: 'quantity_on_hand', header: 'Quantity On Hand' },
+    {
+      accessorKey: 'warehouse_location',
+      header: 'Warehouse Location',
+      cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    },
+    {
+      accessorKey: 'updated_at',
+      header: 'Updated At',
+      cell: ({ getValue }) => formatDate(getValue<string>()),
+    },
+  ];
+}
 
 export const orderColumns: ColumnDef<Order>[] = [
   { accessorKey: 'id', header: 'Order ID' },
@@ -70,14 +81,25 @@ export const orderColumns: ColumnDef<Order>[] = [
   },
 ];
 
-export const orderItemColumns: ColumnDef<OrderItem>[] = [
-  { accessorKey: 'id', header: 'Item ID' },
-  { accessorKey: 'order_id', header: 'Order ID' },
-  { accessorKey: 'product_id', header: 'Product ID' },
-  { accessorKey: 'quantity', header: 'Quantity' },
-  {
-    accessorKey: 'unit_price',
-    header: 'Unit Price',
-    cell: ({ getValue }) => currencyFormatter.format(getValue<number>()),
-  },
-];
+export function createOrderItemColumns(
+  productNameById: Record<string, string>,
+): ColumnDef<OrderItem>[] {
+  return [
+    { accessorKey: 'id', header: 'Item ID' },
+    { accessorKey: 'order_id', header: 'Order ID' },
+    {
+      accessorKey: 'product_id',
+      header: 'Product',
+      cell: ({ getValue }) => {
+        const productId = getValue<string>();
+        return productNameById[productId] ?? productId;
+      },
+    },
+    { accessorKey: 'quantity', header: 'Quantity' },
+    {
+      accessorKey: 'unit_price',
+      header: 'Unit Price',
+      cell: ({ getValue }) => currencyFormatter.format(getValue<number>()),
+    },
+  ];
+}

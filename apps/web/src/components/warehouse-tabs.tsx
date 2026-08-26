@@ -1,11 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useMemo } from 'react';
 
 import {
-  inventoryColumns,
+  createInventoryColumns,
+  createOrderItemColumns,
   orderColumns,
-  orderItemColumns,
   productColumns,
 } from '@/components/data-table/columns';
 import { DataTable } from '@/components/data-table/data-table';
@@ -22,6 +23,23 @@ export function WarehouseTabs() {
   const inventory = useInventory();
   const orders = useOrders();
   const orderItems = useOrderItems();
+
+  const productNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const product of products.data ?? []) {
+      map[product.id] = product.name;
+    }
+    return map;
+  }, [products.data]);
+
+  const inventoryColumns = useMemo(
+    () => createInventoryColumns(productNameById),
+    [productNameById],
+  );
+  const orderItemColumns = useMemo(
+    () => createOrderItemColumns(productNameById),
+    [productNameById],
+  );
 
   return (
     <Tabs defaultValue="products" className="flex h-full flex-col gap-4">
