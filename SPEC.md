@@ -118,7 +118,7 @@ renamed conventions before assuming the code is wrong.
 
 ```bash
 npm install                              # from repo root, installs both workspaces
-cp apps/backend/.env.example apps/backend/.env      # fill in GROQ_API_KEY, SUPABASE_URL, SUPABASE_SECRET_API_KEY
+cp apps/backend/.env.example apps/backend/.env      # fill in GROQ_API_KEY
 cp apps/web/.env.local.example apps/web/.env.local  # NEXT_PUBLIC_BACKEND_URL only
 
 npm run dev            # runs both apps/web (3000) and apps/backend (4000) via concurrently

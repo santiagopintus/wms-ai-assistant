@@ -1,5 +1,10 @@
 import type { Request, Response } from "express";
-import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from "ai";
+import {
+  streamText,
+  convertToModelMessages,
+  stepCountIs,
+  type UIMessage,
+} from "ai";
 import { groq } from "../lib/groq.js";
 import { tools } from "../tools/index.js";
 
@@ -13,7 +18,7 @@ export async function chatStreamHandler(req: Request, res: Response) {
   const { messages } = req.body as { messages: UIMessage[] };
 
   const result = streamText({
-    model: groq("openai/gpt-oss-120b"),
+    model: groq("groq/compound"),
     system: SYSTEM_PROMPT,
     messages: convertToModelMessages(messages),
     tools,
