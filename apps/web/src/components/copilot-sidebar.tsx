@@ -1,5 +1,7 @@
 'use client';
 
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { SendHorizonal, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -8,14 +10,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
 
 export function CopilotSidebar() {
   const t = useTranslations('Dashboard.copilot');
   const [draft, setDraft] = useState('');
 
+  const { messages, sendMessage, status, error } = useChat({
+    transport: new DefaultChatTransport({ api: `${BACKEND_URL}/api/chat` }),
+  });
+
+  const isBusy = status === 'submitted' || status === 'streaming';
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    // Chat is not wired to the AI backend yet.
+    const text = draft.trim();
+    if (!text || isBusy) return;
+    sendMessage({ text });
     setDraft('');
   }
 
@@ -29,7 +42,29 @@ export function CopilotSidebar() {
       <Separator />
 
       <ScrollArea className="flex-1 p-4">
-        <p className="text-sm text-muted-foreground">{t('emptyState')}</p>
+        {messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('emptyState')}</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  'max-w-[90%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap',
+                  message.role === 'user'
+                    ? 'ml-auto bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
+                )}
+              >
+                {message.parts.map((part, i) =>
+                  part.type === 'text' ? <span key={i}>{part.text}</span> : null
+                )}
+              </div>
+            ))}
+            {isBusy && <p className="text-xs text-muted-foreground">{t('thinking')}</p>}
+            {error && <p className="text-xs text-destructive">{t('error')}</p>}
+          </div>
+        )}
       </ScrollArea>
 
       <Separator />
@@ -40,8 +75,9 @@ export function CopilotSidebar() {
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t('inputPlaceholder')}
           className="flex-1"
+          disabled={isBusy}
         />
-        <Button type="submit" size="icon" disabled={draft.trim().length === 0}>
+        <Button type="submit" size="icon" disabled={draft.trim().length === 0 || isBusy}>
           <SendHorizonal className="h-4 w-4" />
         </Button>
       </form>

@@ -18,7 +18,9 @@
     "copilot": {
       "title": "Copiloto",
       "emptyState": "Haz una pregunta sobre tu inventario para comenzar.",
-      "inputPlaceholder": "Pregúntale al copiloto..."
+      "inputPlaceholder": "Pregúntale al copiloto...",
+      "thinking": "Pensando...",
+      "error": "Algo salió mal. Inténtalo de nuevo."
     }
   }
 }

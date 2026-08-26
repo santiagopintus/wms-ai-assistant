@@ -31,6 +31,7 @@ const PRODUCT_NAMES: Record<(typeof CATEGORIES)[number], string[]> = {
     "Tablet Mount",
     "Forklift Battery",
   ],
+  
   Packaging: [
     "Cardboard Box (M)",
     "Cardboard Box (L)",

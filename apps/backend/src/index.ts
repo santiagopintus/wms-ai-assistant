@@ -5,6 +5,7 @@ import * as trpcExpress from '@trpc/server/adapters/express';
 import { appRouter } from './trpc/router.js';
 import { createContext } from './trpc/context.js';
 import { chatStreamHandler } from './chat/stream.js';
+import { dataRouter } from './routes/data.js';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(
 );
 
 app.post('/api/chat', chatStreamHandler);
+app.use('/api', dataRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
