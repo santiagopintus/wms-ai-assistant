@@ -9,6 +9,7 @@
   },
   "Dashboard": {
     "title": "Warehouse Data",
+    "slowServerNotice": "Since this app runs on free hosting, the server may take up to 30 seconds to wake up.",
     "tabs": {
       "products": "Products",
       "inventory": "Inventory",

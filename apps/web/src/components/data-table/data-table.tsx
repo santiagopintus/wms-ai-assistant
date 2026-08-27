@@ -9,7 +9,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
-import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,7 +36,19 @@ export function DataTable<TData, TValue>({
   isLoading,
   isError,
 }: DataTableProps<TData, TValue>) {
+  const t = useTranslations('Dashboard');
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [showSlowNotice, setShowSlowNotice] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowSlowNotice(false);
+      return;
+    }
+
+    const timer = setTimeout(() => setShowSlowNotice(true), 3000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const table = useReactTable({
     data: data ?? [],
@@ -48,6 +61,11 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="rounded-md border">
+      {isLoading && showSlowNotice && (
+        <p className="border-b px-3 py-2 text-xs text-muted-foreground">
+          {t('slowServerNotice')}
+        </p>
+      )}
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

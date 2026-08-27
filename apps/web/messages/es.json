@@ -9,6 +9,7 @@
   },
   "Dashboard": {
     "title": "Datos del Almacén",
+    "slowServerNotice": "Como esta app usa hosting gratuito, el servidor puede tardar hasta 30 segundos en activarse.",
     "tabs": {
       "products": "Productos",
       "inventory": "Inventario",
